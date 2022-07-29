@@ -6,10 +6,22 @@ import urllib.parse
 from pyzbar import pyzbar
 from PIL import Image  # From package Pillow
 import qrcode
+import otp
+import hashlib
+from datetime import datetime
+
+
+ALGORITHMS = {
+    "sha1": hashlib.sha1,
+    "sha256": hashlib.sha256,
+    "sha512": hashlib.sha512
+}
+
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--image", required=True, help="The image containing the TOTP registering QR Code")
+    parser.add_argument("--no-qr", action="store_true", help="Do not output a new QR Code.")
 
     args = parser.parse_args()
 
@@ -32,7 +44,10 @@ def main():
             totps.append({
                 "name": urllib.parse.unquote(uri.path[1:]),
                 "secret": qs["secret"][0],
-                "issuer": qs["issuer"][0].strip() if "issuer" in qs else "Unknown",
+                "issuer": qs.get("issuer", ["Unknown"])[0].strip(),
+                "algorithm": qs.get("algorithm", ["sha1"])[0].lower(),
+                "digits": int(qs.get("digits", ["6"])[0]),
+                "period": int(qs.get("period", ["30"])[0]),
                 "uri": uri_str
             })
         else:
@@ -47,13 +62,19 @@ def main():
 
     for totp in totps:
         print("=" * 20)
-        print(f'Name:    {totp["name"]}')
-        print(f'Secret:  {totp["secret"]}')
-        print(f'Issuer:  {totp["issuer"]}')
-        print(f'URI:     {totp["uri"]}')
-        qr = qrcode.QRCode()
-        qr.add_data(totp["uri"])
-        qr.print_ascii(invert=True)
+        print(f'Name:           {totp["name"]}')
+        print(f'Secret:         {totp["secret"]}')
+        print(f'Issuer:         {totp["issuer"]}')
+        print(f'Hash Algorithm: {totp["algorithm"]}')
+        print(f'OTP Digits:     {totp["digits"]}')
+        print(f'Change Period:  {totp["period"]}')
+        print(f'URI:            {totp["uri"]}')
+        print(f'Current Time:   {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+        print(f'Current Code:   {otp.totp(totp["secret"], digits=totp["digits"], period=totp["period"], digest=ALGORITHMS[totp["algorithm"]])}')
+        if not args.no_qr:
+            qr = qrcode.QRCode()
+            qr.add_data(totp["uri"])
+            qr.print_ascii(invert=True)
 
 if __name__ == "__main__":
     main()

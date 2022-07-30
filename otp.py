@@ -18,6 +18,8 @@ def hotp(
     """HMAC-Based One-Time Password (RFC4226)"""
     if digest not in [hashlib.sha1, hashlib.sha256, hashlib.sha512]:
         raise ValueError("Unsupported digest algorithm")
+    if digits < 6 or digits > 8:
+        raise ValueError("The output digits must be between 6 and 8 (inclusive)")
     HS = hmac.new(K, C, digest).digest()
     Sbits = HS[ (HS[19] & 0x0F) : ((HS[19] & 0x0F) + 4)]
     Snum = int.from_bytes(Sbits, "big", signed=False) & 0x7FFFFFFF
@@ -31,6 +33,7 @@ def totp(
     T0: int = 0,
     digest: Callable[..., Any] = hashlib.sha1
 ) -> str:
+    """Time-Based One-Time Password (RFC6238)"""
     if timestamp is None:
         T = math.floor((time.time() - T0) / period)
     else:

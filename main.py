@@ -93,17 +93,21 @@ def main():
 
     print(f'Total detected TOTP QR Code: {len(totps)}', file=sys.stderr)
 
+    # Print out all information about scanned QR code
     for totp in totps:
         print("=" * 20)
         for field_name, field_value in totp.items():
-            if field_name in ["secret", "uri"] and not args.show_secret:
+            if field_name in ["secret", "uri"]:
                 valid_secret = True
                 if field_name == "secret":
                     try:
                         base64.b32decode(field_value)
                     except binascii.Error:
                         valid_secret = False
-                print(f'{field_name:>20}: {"*" * len(field_value)}{"" if valid_secret else " (invalid)"}')
+                if not args.show_secret:
+                    print(f'{field_name:>20}: {"*" * 20}{"" if valid_secret else " (invalid)"}')
+                else:
+                    print(f'{field_name:>20}: {field_value}{"" if valid_secret else " (invalid)"}')
             elif field_name == "digits":
                 print(
                     f'{field_name:>20}: {field_value}'

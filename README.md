@@ -10,6 +10,8 @@ This program is designed for those, for some reason, unable to scan the QR Code 
     * Debian / Ubuntu: `apt install libzbar0`
     * RedHat / CentOS Stream / Rocky Linux / AlmaLinux: `dnf install zbar`
     * MacOS: `brew install zbar`
+* (Windows user only) Visual C++ Redistributable Packages for Visual Studio 2013
+    * Download from [Official Site](https://www.microsoft.com/en-us/download/details.aspx?id=40784)
 
 ## Usage
 

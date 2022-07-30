@@ -1,4 +1,6 @@
-
+"""
+    Implementation of HOTP (RFC4226) and TOTP (RFC6238)
+"""
 import hmac
 import hashlib
 import base64

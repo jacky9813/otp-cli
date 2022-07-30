@@ -47,9 +47,9 @@ def main():
 
     args = parser.parse_args()
 
-
     totps = []
 
+    # Reading QR Code from images
     for img_file in args.image:
         scanned = pyzbar.decode(Image.open(img_file))
         for info in scanned:
@@ -97,7 +97,13 @@ def main():
         print("=" * 20)
         for field_name, field_value in totp.items():
             if field_name in ["secret", "uri"] and not args.show_secret:
-                print(f'{field_name:>20}: {"*" * len(field_value)}')
+                valid_secret = True
+                if field_name == "secret":
+                    try:
+                        base64.b32decode(field_value)
+                    except binascii.Error:
+                        valid_secret = False
+                print(f'{field_name:>20}: {"*" * len(field_value)}{"" if valid_secret else " (invalid)"}')
             elif field_name == "digits":
                 print(
                     f'{field_name:>20}: {field_value}'

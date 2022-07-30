@@ -17,6 +17,7 @@ This program is designed for those, for some reason, unable to scan the QR Code 
 python3 main.py --image path/to/the/image
 ```
 
-## Issue
+## Limitations
 
-* Invalid secret is not detected.
+* Tilted QR Code maybe unable to read
+* Some QR Code image may require some enhancement before reading

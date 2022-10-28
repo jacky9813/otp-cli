@@ -16,7 +16,17 @@ This program is designed for those, for some reason, unable to scan the QR Code 
 ## Usage
 
 ```bash
-python3 main.py --image path/to/the/image
+python3 main.py path/to/image-1 path/to/image-2
+```
+
+Output the TOTP secret:
+```bash
+python3 main.py --show-secret path/to/image-1 path/to/image-2
+```
+
+Show help message:
+```bash
+python3 main.py --help
 ```
 
 ## Limitations

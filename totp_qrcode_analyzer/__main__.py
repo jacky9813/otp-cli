@@ -1,27 +1,22 @@
 #!/usr/bin/env python3
 
 import argparse
-import binascii
 import sys
 import hashlib
 from datetime import datetime
 import logging
-import urllib.parse
 import typing
 
-from pyzbar import pyzbar
-from PIL import Image  # From package Pillow
-import qrcode
-
 from . import totp as totp_module
+from . import hotp as hotp_module
+from . import image
 from . import otpauth_migrate
 
 
 ALGORITHMS = {
     "SHA1": hashlib.sha1,
     "SHA256": hashlib.sha256,
-    "SHA512": hashlib.sha512,
-    "MD5": hashlib.md5
+    "SHA512": hashlib.sha512
 }
 
 
@@ -66,39 +61,11 @@ def main():
         level=args.log_level
     )
 
-    totps: typing.List[totp_module.TOTP] = []
-
-    # Reading QR Code from images
-    for img_file in args.image:
-        scanned = pyzbar.decode(Image.open(img_file))
-        for info in scanned:
-            try:
-                uri_str = info.data.decode("utf-8")
-            except UnicodeDecodeError:
-                print("Detected a non-TOTP QR code", file=sys.stderr)
-                continue
-            uri = urllib.parse.urlparse(uri_str)
-            if uri.scheme not in ["otpauth", "otpauth-migration"]:
-                print("Detected a non-TOTP QR code", file=sys.stderr)
-                continue
-            if uri.scheme == "otpauth" and uri.hostname == "totp":
-                totps.append(totp_module.TOTP(
-                    label=uri.path.strip("/"),
-                    **{
-                        k: v[0]
-                        for k, v in urllib.parse.parse_qs(uri.query).items()
-                        if v
-                    }
-                ))
-            elif uri.scheme == "otpauth-migration":
-                migrate = otpauth_migrate.OtpauthMigrate.from_uri(
-                    uri_str
-                )
-                totps.extend([
-                    otp
-                    for otp in migrate.otp_list
-                    if isinstance(otp, totp_module.TOTP)
-                ])
+    totps: typing.List[typing.Union[totp_module.TOTP, hotp_module.HOTP]] = [
+        otp
+        for image_file in args.image
+        for otp in image.read_image(image_file)
+    ]
 
     if len(totps) == 0:
         print("No TOTP code has been detected.", file=sys.stderr)
@@ -136,10 +103,7 @@ def main():
                 print(f'{field_name:>20}: {field_value}')
         print(f'{"URI":>20}: {totp.to_uri() if args.show_secret else "*"*30}')
         print(f'{"Current Time":>20}: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
-        try:
-            code = totp.get_code()
-        except (binascii.Error, ValueError):
-            code = "Invalid TOTP"
+        code = totp.get_code()
         print(f'{"Current Code":>20}: {code}')
         if not args.no_qr and not args.to_migration:
             totp.print_qrcode()

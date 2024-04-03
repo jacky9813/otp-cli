@@ -30,7 +30,8 @@ class HOTP:
         if not isinstance(secret, (bytes, str)):
             raise TypeError("secret must be a str or bytes")
         if isinstance(secret, str):
-            secret = base64.b32decode(secret)
+            padding_length = 8 - (len(secret) % 8) if len(secret) % 8 else 0
+            secret = base64.b32decode(f'{secret}{"=" * padding_length}')
         self._shared_secret = secret
         self._counter = int(counter or 0)
         self._digest = algorithm.lower()
@@ -45,7 +46,7 @@ class HOTP:
     @property
     def secret(self) -> str:
         "Base-32 encoded secret."
-        return base64.b32encode(self._shared_secret).decode()
+        return base64.b32encode(self._shared_secret).decode().strip("=")
 
 
     @property
@@ -79,8 +80,13 @@ class HOTP:
         return s_num & 0x7FFFFFFF
 
 
-    def get_code(self) -> str:
-        hs = hmac.new(self.K, self.C, self._digest).digest()
+    def get_code(self, counter: typing.Optional[int] = None) -> str:
+        hs = hmac.new(
+            self.K,
+            counter.to_bytes(8, self._byteorder, signed=False)
+                if counter else self.C,
+            self._digest
+        ).digest()
         s_num = self.dynamic_truncation(hs)
         return "".join([
             "0" * self.digits,
@@ -111,6 +117,7 @@ class HOTP:
                 "secret": self.secret,
                 "algorithm": self._digest.upper(),
                 "digits": self.digits,
+                "counter": self._counter,
                 **self.additional_info
             }.items()
             if v

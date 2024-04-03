@@ -70,7 +70,7 @@ class HOTP:
 
 
     def dynamic_truncation(self, value: bytes) -> int:
-        offset_bits = value[19] & 0x0F
+        offset_bits = value[-1] & 0x0F
         s_num = int.from_bytes(
             value[offset_bits:offset_bits+4], 
             self._byteorder,

@@ -32,10 +32,9 @@ class HOTP:
         if isinstance(secret, str):
             secret = base64.b32decode(secret)
         self._shared_secret = secret
-        self._counter = counter
+        self._counter = int(counter or 0)
         self._digest = algorithm.lower()
-        self._digits = digits
-        # self._byteorder: typing.Literal["little", "big"] = sys.byteorder
+        self._digits = int(digits)
         self._byteorder: typing.Literal["little", "big"] = "big"
         for v in additional_info.values():
             if not isinstance(v, str):

@@ -17,7 +17,7 @@ class TOTP(hotp.HOTP):
         self,
         secret: typing.Union[bytes, str],
         *,
-        period: typing.Union[int, float] = 30,
+        period: int = 30,
         digits: typing.Literal[6, 8] = 6,
         algorithm: str = "sha1",
         **additional_info
@@ -29,7 +29,7 @@ class TOTP(hotp.HOTP):
             algorithm=algorithm,
             **additional_info
         )
-        self._period = period
+        self._period = int(period)
 
 
     @property

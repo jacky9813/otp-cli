@@ -7,16 +7,17 @@ authors = [
     {name = "Jacky Chen", email = "jacky9813@hotmail.com"}
 ]
 dependencies = [
-    "pyzbar>=0.1.9",
-    "qrcode>=7.3.1",
-    "Pillow>=9.2.0"
+    "pyzbar >= 0.1.9",
+    "qrcode >= 7.3.1",
+    "Pillow >= 9.2.0",
+    "protobuf >= 5.26.1"
 ]
 requires-python = ">= 3.8"
 
 dynamic = ["version"]
 
 [project.scripts]
-totp = "totp_qrcode_analyzer:__main__"
+totp = "totp_qrcode_analyzer.__main__:main"
 
 [project.urls]
 Homepage = "https://github.com/jacky9813/totp-qrcode-analyzer"
@@ -26,3 +27,11 @@ Issues = "https://github.com/jacky9813/totp-qrcode-analyzer/issues"
 [build-system]
 requires = ["setuptools[toml] >= 65.0"]
 build-backend = "setuptools.build_meta"
+
+[tool.setuptools_scm]
+
+[tool.setuptools.package-data]
+"*" = [
+    "*.proto",
+    "*.pyi"
+]

@@ -2,7 +2,15 @@
 TOTP code extractor / rebuilder
 ###############################
 
+.. _otpauth URI scheme: https://www.ietf.org/archive/id/draft-linuxgemini-otpauth-uri-00.html
+.. _otpauth-migration URI scheme: https://github.com/google/google-authenticator-android/issues/118
+
 This program is designed for who want to rebuild the QR code of a TOTP.
+
+The CLI support the following OTP format:
+
+* `otpauth URI scheme`_ (Standard OTP)
+* `otpauth-migration URI scheme` (Google Authenticator)
 
 
 Requirements
@@ -29,6 +37,8 @@ Installation
 Usage
 =====
 
+Reading a QR code image:
+
 .. code:: shell
 
     #!/bin/bash
@@ -49,6 +59,14 @@ Show help message:
 
     #!/bin/bash
     totp --help
+
+
+Export all scanned OTP into Google Authenticator migration format:
+
+.. code:: shell
+
+    #!/bin/bash
+    totp --to-migration path/to/image-1 path/to/image-2
 
 
 Limitations

@@ -5,7 +5,7 @@ import binascii
 import sys
 import hashlib
 from datetime import datetime
-import base64
+import logging
 import urllib.parse
 import typing
 
@@ -14,6 +14,7 @@ from PIL import Image  # From package Pillow
 import qrcode
 
 from . import totp as totp_module
+from . import otpauth_migrate
 
 
 ALGORITHMS = {
@@ -22,6 +23,10 @@ ALGORITHMS = {
     "SHA512": hashlib.sha512,
     "MD5": hashlib.md5
 }
+
+
+logger = logging.getLogger(__name__)
+
 
 def main():
     "Output information about all TOTP QRCodes from image(s)."
@@ -43,8 +48,23 @@ def main():
         action="store_true",
         help="Display the secret."
     )
+    parser.add_argument(
+        "--log-level",
+        choices=[l for l in logging._nameToLevel],
+        default="INFO"
+    )
+    parser.add_argument(
+        "--to-migration",
+        action="store_true",
+        help="Convert all found otp to Google Authenticator migration format."
+    )
 
     args = parser.parse_args()
+
+    logging.basicConfig(
+        stream=sys.stderr,
+        level=args.log_level
+    )
 
     totps: typing.List[totp_module.TOTP] = []
 
@@ -58,17 +78,27 @@ def main():
                 print("Detected a non-TOTP QR code", file=sys.stderr)
                 continue
             uri = urllib.parse.urlparse(uri_str)
-            if uri.scheme != "otpauth" or uri.netloc != "totp":
+            if uri.scheme not in ["otpauth", "otpauth-migration"]:
                 print("Detected a non-TOTP QR code", file=sys.stderr)
                 continue
-            totps.append(totp_module.TOTP(
-                label=uri.path.strip("/"),
-                **{
-                    k: v[0]
-                    for k, v in urllib.parse.parse_qs(uri.query).items()
-                    if v
-                }
-            ))
+            if uri.scheme == "otpauth" and uri.hostname == "totp":
+                totps.append(totp_module.TOTP(
+                    label=uri.path.strip("/"),
+                    **{
+                        k: v[0]
+                        for k, v in urllib.parse.parse_qs(uri.query).items()
+                        if v
+                    }
+                ))
+            elif uri.scheme == "otpauth-migration":
+                migrate = otpauth_migrate.OtpauthMigrate.from_uri(
+                    uri_str
+                )
+                totps.extend([
+                    otp
+                    for otp in migrate.otp_list
+                    if isinstance(otp, totp_module.TOTP)
+                ])
 
     if len(totps) == 0:
         print("No TOTP code has been detected.", file=sys.stderr)
@@ -111,8 +141,19 @@ def main():
         except (binascii.Error, ValueError):
             code = "Invalid TOTP"
         print(f'{"Current Code":>20}: {code}')
-        if not args.no_qr:
+        if not args.no_qr and not args.to_migration:
             totp.print_qrcode()
+
+    if not args.no_qr and args.to_migration:
+        print("=" * 20)
+        migration = otpauth_migrate.OtpauthMigrate(
+            otp_list=totps
+        )
+        print(
+            f'{"Migration URI":>20}:',
+            migration.to_uri() if args.show_secret else "*" * 40
+        )
+        migration.print_qrcode()
 
 if __name__ == "__main__":
     main()

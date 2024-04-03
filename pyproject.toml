@@ -1,0 +1,28 @@
+[project]
+name = "totp_qrcode_analyzer"
+description = "A RFC6238 TOTP QR Code reader and rebuilder."
+readme = {file="README.rst", content-type = "text/x-rst"}
+license = { text = "MIT License" }
+authors = [
+    {name = "Jacky Chen", email = "jacky9813@hotmail.com"}
+]
+dependencies = [
+    "pyzbar>=0.1.9",
+    "qrcode>=7.3.1",
+    "Pillow>=9.2.0"
+]
+requires-python = ">= 3.8"
+
+dynamic = ["version"]
+
+[project.scripts]
+totp = "totp_qrcode_analyzer:__main__"
+
+[project.urls]
+Homepage = "https://github.com/jacky9813/totp-qrcode-analyzer"
+Repository = "https://github.com/jacky9813/totp-qrcode-analyzer"
+Issues = "https://github.com/jacky9813/totp-qrcode-analyzer/issues"
+
+[build-system]
+requires = ["setuptools[toml] >= 65.0"]
+build-backend = "setuptools.build_meta"

@@ -7,20 +7,24 @@ import hashlib
 from datetime import datetime
 import base64
 import urllib.parse
+import typing
+
 from pyzbar import pyzbar
 from PIL import Image  # From package Pillow
 import qrcode
-import otp
+
+from . import totp as totp_module
 
 
 ALGORITHMS = {
-    "sha1": hashlib.sha1,
-    "sha256": hashlib.sha256,
-    "sha512": hashlib.sha512
+    "SHA1": hashlib.sha1,
+    "SHA256": hashlib.sha256,
+    "SHA512": hashlib.sha512,
+    "MD5": hashlib.md5
 }
 
 def main():
-    "Output information about all TOTP QRCodes from the image."
+    "Output information about all TOTP QRCodes from image(s)."
     parser = argparse.ArgumentParser(
         description=main.__doc__
     )
@@ -39,15 +43,10 @@ def main():
         action="store_true",
         help="Display the secret."
     )
-    parser.add_argument(
-        "--show-qr-stat",
-        action="store_true",
-        help="Show the information about source QR code"
-    )
 
     args = parser.parse_args()
 
-    totps = []
+    totps: typing.List[totp_module.TOTP] = []
 
     # Reading QR Code from images
     for img_file in args.image:
@@ -62,25 +61,14 @@ def main():
             if uri.scheme != "otpauth" or uri.netloc != "totp":
                 print("Detected a non-TOTP QR code", file=sys.stderr)
                 continue
-            qs = urllib.parse.parse_qs(uri.query)
-            if "secret" in qs:
-                totps.append({
-                    "image_file": img_file,
-                    "name": urllib.parse.unquote(uri.path[1:]),
-                    "secret": qs["secret"][0],
-                    "issuer": qs.get("issuer", ["Unknown"])[0].strip(),
-                    "algorithm": qs.get("algorithm", ["sha1"])[0].lower(),
-                    "digits": int(qs.get("digits", ["6"])[0]),
-                    "period": int(qs.get("period", ["30"])[0]),
-                    "qrcode": info,
-                    "uri": uri_str
-                })
-                try:
-                    base64.b32decode(totps[-1]["secret"])
-                except binascii.Error:
-                    totps[-1]["secret"] = f'{totps[-1]["secret"]} (Invalid)'
-            else:
-                print("Detected a totp URI but has no secret string.")
+            totps.append(totp_module.TOTP(
+                label=uri.path.strip("/"),
+                **{
+                    k: v[0]
+                    for k, v in urllib.parse.parse_qs(uri.query).items()
+                    if v
+                }
+            ))
 
     if len(totps) == 0:
         print("No TOTP code has been detected.", file=sys.stderr)
@@ -96,50 +84,35 @@ def main():
     # Print out all information about scanned QR code
     for totp in totps:
         print("=" * 20)
-        for field_name, field_value in totp.items():
+        for field_name, field_value in totp.to_dict().items():
             if field_name in ["secret", "uri"]:
-                valid_secret = True
-                if field_name == "secret":
-                    try:
-                        base64.b32decode(field_value)
-                    except binascii.Error:
-                        valid_secret = False
                 if not args.show_secret:
-                    print(f'{field_name:>20}: {"*" * 20}{"" if valid_secret else " (invalid)"}')
+                    print(f'{field_name:>20}: {"*" * 20}')
                 else:
-                    print(f'{field_name:>20}: {field_value}{"" if valid_secret else " (invalid)"}')
+                    print(f'{field_name:>20}: {field_value}')
             elif field_name == "digits":
+                field_value = int(field_value)
                 print(
                     f'{field_name:>20}: {field_value}'
                     f'{" (invalid)" if field_value < 6 or field_value > 8 else ""}'
                 )
             elif field_name == "algorithm":
                 print(
-                    f'{field_name:>20}: {field_value}' +
-                    f'{" (invalid)" if field_value not in ALGORITHMS else ""}'
-                    f'{" (not supported by most OTP/MFA App)" if field_value != "sha1" else ""}'
+                    f'{field_name:>20}: {field_value}',
+                    "(invalid)" if field_value not in ALGORITHMS else ""
+                    " (not supported by most OTP/MFA App)" if field_value != "SHA1" else ""
                 )
-            elif field_name == "qrcode":
-                if args.show_qr_stat:
-                    for qr_attr in ["type", "orientation", "quality"]:
-                        print(f'{f"Code {qr_attr}":>20}: {getattr(field_value, qr_attr)}')
             else:
                 print(f'{field_name:>20}: {field_value}')
+        print(f'{"URI":>20}: {totp.to_uri() if args.show_secret else "*"*30}')
         print(f'{"Current Time":>20}: {datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
         try:
-            code = otp.totp(
-                totp["secret"],
-                digits=totp["digits"],
-                period=totp["period"],
-                digest=ALGORITHMS[totp["algorithm"]]
-            )
+            code = totp.get_code()
         except (binascii.Error, ValueError):
             code = "Invalid TOTP"
         print(f'{"Current Code":>20}: {code}')
         if not args.no_qr:
-            qr = qrcode.QRCode()
-            qr.add_data(totp["uri"])
-            qr.print_ascii(invert=True)
+            totp.print_qrcode()
 
 if __name__ == "__main__":
     main()

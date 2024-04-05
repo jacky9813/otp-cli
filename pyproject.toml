@@ -8,16 +8,19 @@ authors = [
 ]
 dependencies = [
     "pyzbar >= 0.1.9",
-    "qrcode >= 7.3.1",
+    "qrcode[pil] >= 7.3.1",
     "Pillow >= 9.2.0",
-    "protobuf >= 5.26.1"
+    "protobuf >= 5.26.1",
+    "click >= 8.1.7"
 ]
 requires-python = ">= 3.8"
 
 dynamic = ["version"]
 
 [project.scripts]
-totp = "totp_qrcode_analyzer.__main__:main"
+# Using otp-cli as there is an application uses otp as program name within
+# most of the Linux distros.
+otp-cli = "totp_qrcode_analyzer.__main__:cli"
 
 [project.urls]
 Homepage = "https://github.com/jacky9813/totp-qrcode-analyzer"

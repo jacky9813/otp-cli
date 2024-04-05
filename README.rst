@@ -37,28 +37,28 @@ Installation
 Usage
 =====
 
-Reading a QR code image:
-
-.. code:: shell
-
-    #!/bin/bash
-    totp path/to/image-1 path/to/image-2
-
-
-Print the TOTP secret:
-
-.. code:: shell
-
-    #!/bin/bash
-    totp --show-secret path/to/image-1 path/to/image-2
-
-
 Show help message:
 
 .. code:: shell
 
     #!/bin/bash
-    totp --help
+    otp-cli --help
+
+
+Read a QR code image and print OTP info:
+
+.. code:: shell
+
+    #!/bin/bash
+    otp-cli read-image path/to/image-1 path/to/image-2
+
+
+Read a QR code image and print OTP info with secret exposed:
+
+.. code:: shell
+
+    #!/bin/bash
+    otp-cli read-image --show-secret path/to/image-1 path/to/image-2
 
 
 Export all scanned OTP into Google Authenticator migration format:
@@ -66,7 +66,20 @@ Export all scanned OTP into Google Authenticator migration format:
 .. code:: shell
 
     #!/bin/bash
-    totp --to-migration path/to/image-1 path/to/image-2
+    otp-cli read-image --to-migration path/to/image-1 path/to/image-2
+
+
+Build an TOTP QR code:
+
+.. code:: shell
+
+    #!/bin/bash
+    dd if=/dev/urandom bs=16 count=1 | otp-cli build totp - -o output.png
+    # If you prefer SVG:
+    # otp-cli build totp - -o output.svg
+    #
+    # Or show the QR Code in the console:
+    # otp-cli build totp -
 
 
 Limitations

@@ -29,6 +29,11 @@ class HOTP:
             raise ValueError("secret cannot be empty")
         if not isinstance(secret, (bytes, str)):
             raise TypeError("secret must be a str or bytes")
+        if len(secret) < 16:
+            # As required in R6 of RFC 4226 Section 4 - Algorithm Requirements
+            raise ValueError(
+                "The length of the secret must at least 128 bits (16 Bytes)"
+            )
         if isinstance(secret, str):
             padding_length = 8 - (len(secret) % 8) if len(secret) % 8 else 0
             secret = base64.b32decode(f'{secret}{"=" * padding_length}')
@@ -41,6 +46,30 @@ class HOTP:
             if not isinstance(v, str):
                 raise TypeError("All additional info must be a string")
         self.additional_info: typing.Dict[str, str] = additional_info
+
+
+    def __repr__(self) -> str:
+        properties = ", ".join([
+            f'{k}: {v}'
+            for k, v in self.additional_info.items()
+        ])
+        return f'<{type(self).__name__} [{properties}] at 0x{id(self):x}>'
+
+
+    def __getitem__(self, key: str) -> str:
+        return self.additional_info[key]
+
+
+    def __setitem__(self, key: str, value: str) -> None:
+        if not isinstance(key, str):
+            raise TypeError("key must be str")
+        if not isinstance(value, str):
+            raise TypeError("value must be string")
+        self.additional_info[key] = value
+
+
+    def get(self, key: str, default: T) -> typing.Union[str, T]:
+        return self.additional_info.get(key, default)
 
 
     @property
@@ -92,22 +121,6 @@ class HOTP:
             "0" * self.digits,
             str(s_num % (10 ** self.digits))
         ])[-self.digits:]
-    
-
-    def __getitem__(self, key: str) -> str:
-        return self.additional_info[key]
-    
-
-    def get(self, key: str, default: T) -> typing.Union[str, T]:
-        return self.additional_info.get(key, default)
-
-
-    def __setitem__(self, key: str, value: str) -> None:
-        if not isinstance(key, str):
-            raise TypeError("key must be str")
-        if not isinstance(value, str):
-            raise TypeError("value must be string")
-        self.additional_info[key] = value
 
 
     def to_dict(self) -> typing.Dict[str, typing.Union[str, int]]:
@@ -138,6 +151,13 @@ class HOTP:
             ""
         )
         return urllib.parse.urlunparse(uri)
+
+
+    def to_qrcode_image(self, image_factory = None):
+        uri = self.to_uri()
+        qr = QRCode(image_factory=image_factory)
+        qr.add_data(uri)
+        return qr.make_image()
 
 
     def print_qrcode(self) -> None:

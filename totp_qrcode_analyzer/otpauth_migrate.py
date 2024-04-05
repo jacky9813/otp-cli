@@ -1,6 +1,7 @@
 import base64
 import typing
 import urllib.parse
+import logging
 
 from qrcode.main import QRCode
 
@@ -30,6 +31,9 @@ ALGORITHM_MAPPING: typing.Dict[
     otpauth_migrate_pb2.MigrationPayload.Algorithm.ALGORITHM_SHA512: "SHA512",
     otpauth_migrate_pb2.MigrationPayload.Algorithm.ALGORITHM_MD5: "MD5"
 }
+
+
+logger = logging.getLogger(__name__)
 
 
 def to_totp(
@@ -93,6 +97,10 @@ class OtpauthMigrate:
         self.batch_id = batch_id
 
 
+    def __repr__(self) -> str:
+        return f'<{type(self).__name__} [{len(self.otp_list)} of OTPs] object at 0x{id(self):x}>'
+
+
     @classmethod
     def from_uri(cls: typing.Type[T], uri: str) -> T:
         parsed_uri = urllib.parse.urlparse(uri)
@@ -148,6 +156,10 @@ class OtpauthMigrate:
                 )
             )
             for otp in self.otp_list
+            if (
+                type(otp) == hotp.HOTP or
+                (type(otp) == totp.TOTP and otp._period == 30)
+            )
         ]
 
         migration = otpauth_migrate_pb2.MigrationPayload(
@@ -172,6 +184,16 @@ class OtpauthMigrate:
         )
 
         return urllib.parse.urlunparse(uri)
+
+
+    def to_qrcode_image(
+        self,
+        image_factory = None
+    ):
+        uri = self.to_uri()
+        qr = QRCode(image_factory=image_factory)
+        qr.add_data(uri)
+        return qr.make_image()
 
 
     def print_qrcode(self) -> None:

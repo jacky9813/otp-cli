@@ -1,5 +1,5 @@
 [project]
-name = "totp_qrcode_analyzer"
+name = "otp_cli"
 description = "A RFC6238 TOTP QR Code reader and rebuilder."
 readme = {file="README.rst", content-type = "text/x-rst"}
 license = { text = "MIT License" }
@@ -23,9 +23,9 @@ dynamic = ["version"]
 otp-cli = "totp_qrcode_analyzer.__main__:cli"
 
 [project.urls]
-Homepage = "https://github.com/jacky9813/totp-qrcode-analyzer"
-Repository = "https://github.com/jacky9813/totp-qrcode-analyzer"
-Issues = "https://github.com/jacky9813/totp-qrcode-analyzer/issues"
+Homepage = "https://github.com/jacky9813/otp-cli"
+Repository = "https://github.com/jacky9813/otp-cli"
+Issues = "https://github.com/jacky9813/otp-cli/issues"
 
 [build-system]
 requires = ["setuptools[toml] >= 65.0"]

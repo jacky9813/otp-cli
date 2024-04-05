@@ -1,6 +1,6 @@
-###############################
-TOTP code extractor / rebuilder
-###############################
+######################################
+OTP (HOTP/TOTP) Command Line Interface
+######################################
 
 .. _otpauth URI scheme: https://www.ietf.org/archive/id/draft-linuxgemini-otpauth-uri-00.html
 .. _otpauth-migration URI scheme: https://github.com/google/google-authenticator-android/issues/118

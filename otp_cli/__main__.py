@@ -62,7 +62,7 @@ def show_otp_info(
 def get_image_factory(output: str):
     ext = os.path.splitext(output)[1].lower().strip(".")
     if ext in ["png", "-"]:
-        return qrcode.image.pure.PyPNGImage
+        return None
     elif ext == "svg":
         return qrcode.image.svg.SvgPathImage
     raise ValueError("Unknown output file extension")

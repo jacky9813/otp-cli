@@ -7,6 +7,7 @@ import hashlib
 from datetime import datetime
 import logging
 import typing
+import re
 
 import click
 import qrcode
@@ -76,6 +77,42 @@ def cli():
     """
 
 
+SET_COUNTER_RE = re.compile(r"(?P<relative>\+|-)?(?P<new_counter>\d+)")
+
+
+def get_counter_modifier(
+    set_counter: str
+) -> typing.Callable[[hotp_module.HOTP], None]:
+    if not set_counter:
+        return lambda _: None
+    set_counter_match = SET_COUNTER_RE.match(set_counter)
+
+    if not set_counter_match:
+        raise ValueError(
+            'Invalid value for set_counter. Must be ("+"/"-"/"")<integer>.'
+        )
+
+    relative = set_counter_match.group("relative")
+    new_counter = int(set_counter_match.group("new_counter"))
+
+    def counter_modifier(hotp: hotp_module.HOTP) -> None:
+        # Cannot use isinstance here as it checks for subclasses.
+        if type(hotp) != hotp_module.HOTP:
+            return
+        if relative == "+":
+            hotp.set_counter(hotp._counter + new_counter)
+        elif relative == "-":
+            hotp.set_counter(hotp._counter - new_counter)
+        elif not relative:
+            hotp.set_counter(new_counter)
+        else:
+            raise ValueError(
+                "relative must be either empty, plus sign or minus sign"
+            )
+
+    return counter_modifier
+
+
 @cli.command()
 @click.argument(
     "image",
@@ -101,11 +138,18 @@ def cli():
     help="Output all OTP into one OTP migration format (for Google "
          "Authenticator)"
 )
+@click.option(
+    "--set-counter",
+    help="For HOTP, reset the counter to the specified value. When the number "
+         "is prefixed by a plus or minus sign, this indicates the relative "
+         "counter number instead of an absolute number."
+)
 def read_image(
     image: typing.Iterable[str],
     qr: bool = True,
     show_secret: bool = False,
-    to_migration: bool = False
+    to_migration: bool = False,
+    set_counter: str = ""
 ):
     """
     Reads IMAGE files and rebuild the QR code for the OTP.
@@ -115,8 +159,10 @@ def read_image(
         for filepath in image
         for otp in images.read_image(filepath)
     ]
+    hotp_counter_modifier = get_counter_modifier(set_counter)
     for otp in otp_list:
         print("=" * 20)
+        hotp_counter_modifier(otp)
         show_otp_info(otp, show_secret)
         if qr and not to_migration:
             otp.print_qrcode()

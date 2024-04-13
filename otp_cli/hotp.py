@@ -112,6 +112,12 @@ class HOTP:
         return self._digits
 
 
+    def set_counter(self, new_value: int) -> None:
+        if not isinstance(new_value, int):
+            raise TypeError("new_value must be an integer")
+        self._counter = new_value
+
+
     def dynamic_truncation(self, value: bytes) -> int:
         offset_bits = value[-1] & 0x0F
         s_num = int.from_bytes(

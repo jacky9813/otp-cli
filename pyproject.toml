@@ -20,7 +20,7 @@ dynamic = ["version"]
 [project.scripts]
 # Using otp-cli as there is an application uses otp as program name within
 # most of the Linux distros.
-otp-cli = "totp_qrcode_analyzer.__main__:cli"
+otp-cli = "otp_cli.__main__:cli"
 
 [project.urls]
 Homepage = "https://github.com/jacky9813/otp-cli"

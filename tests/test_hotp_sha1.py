@@ -1,17 +1,24 @@
 import urllib.parse
 import typing
+import pathlib
 
-import totp_qrcode_analyzer
+import otp_cli
+import otp_cli.images
+
+import conftest
 
 
-def test_sha1():
+def test_sha1(
+    tmp_path: pathlib.Path,
+    verifier: conftest.VERIFIER_TYPE
+):
     secret = b'Some random secret'
     # encoded_secret = base64.b32encode(secret).decode().strip("=")
     encoded_secret = "KNXW2ZJAOJQW4ZDPNUQHGZLDOJSXI"
     issuer = "Testing"
     label = "hotp-sha1-6digits"
     initial_counter = 1234
-    hotp = totp_qrcode_analyzer.HOTP(
+    hotp = otp_cli.HOTP(
         secret,
         counter=initial_counter,
         digits=6,
@@ -19,15 +26,22 @@ def test_sha1():
         issuer=issuer,
         label=label
     )
-    pre_run_uri = urllib.parse.urlparse(hotp.to_uri())
-    pre_run_qs = urllib.parse.parse_qs(pre_run_uri.query)
-    assert pre_run_uri.scheme == "otpauth"
-    assert pre_run_uri.hostname == "hotp"
-    assert pre_run_uri.path == f'/{label}'
-    assert str(initial_counter) in pre_run_qs.get("counter", [])
-    assert encoded_secret in pre_run_qs.get("secret", [])
-    assert issuer in pre_run_qs.get("issuer", [])
-    assert "SHA1" in pre_run_qs.get("algorithm", [])
+
+    verifier(
+        hotp,
+        "hotp",
+        None,
+        encoded_secret,
+        initial_counter,
+        label,
+        issuer,
+        "sha1"
+    )
+
+    qr_image_filename = tmp_path / "hotp-sha1-6digits.png"
+    qr_image = hotp.to_qrcode_image()
+    qr_image.save(qr_image_filename)
+
     expected_results: typing.List[str] = [
         "084734",
         "683916",
@@ -38,15 +52,31 @@ def test_sha1():
     for result in expected_results:
         assert hotp.get_code() == result
 
-    after_run_uri = urllib.parse.urlparse(hotp.to_uri())
-    after_run_qs = urllib.parse.parse_qs(after_run_uri.query)
-    assert after_run_uri.scheme == "otpauth"
-    assert after_run_uri.hostname == "hotp"
-    assert after_run_uri.path == f'/{label}'
-    assert (
-        str(initial_counter + len(expected_results)) in
-        after_run_qs.get("counter", [])
+    verifier(
+        hotp,
+        "hotp",
+        None,
+        encoded_secret,
+        initial_counter + len(expected_results),
+        label,
+        issuer,
+        "sha1"
     )
-    assert encoded_secret in after_run_qs.get("secret", [])
-    assert issuer in after_run_qs.get("issuer", [])
-    assert "SHA1" in after_run_qs.get("algorithm", [])
+
+    loaded_hotp = [
+        o for o in otp_cli.images.read_image(qr_image_filename)
+    ]
+
+    assert len(loaded_hotp) == 1
+
+    verifier(
+        loaded_hotp[0],
+        "hotp",
+        None,
+        encoded_secret,
+        initial_counter,
+        label,
+        issuer,
+        "sha1"
+    )
+

@@ -7,6 +7,7 @@ import hmac
 import base64
 import typing
 from qrcode.main import QRCode
+import qrcode.image.base
 
 
 T = typing.TypeVar("T")
@@ -153,7 +154,9 @@ class HOTP:
         return urllib.parse.urlunparse(uri)
 
 
-    def to_qrcode_image(self, image_factory = None):
+    def to_qrcode_image(
+        self, image_factory = None
+    ) -> qrcode.image.base.BaseImage:
         uri = self.to_uri()
         qr = QRCode(image_factory=image_factory)
         qr.add_data(uri)

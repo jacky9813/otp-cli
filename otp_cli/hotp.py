@@ -16,6 +16,13 @@ T = typing.TypeVar("T")
 class HOTP:
     otp_type: str = "hotp"
 
+    _PROHIBITED_KEYS: typing.List[str] = [
+        "counter",
+        "algorithm",
+        "secret",
+        "digits"
+    ]
+
 
     def __init__(
         self,
@@ -62,6 +69,11 @@ class HOTP:
 
 
     def __setitem__(self, key: str, value: str) -> None:
+        if key in self._PROHIBITED_KEYS:
+            raise KeyError(
+                "key cannot be one of the reserved keys: %s" %
+                (", ".join(self._PROHIBITED_KEYS))
+            )
         if not isinstance(key, str):
             raise TypeError("key must be str")
         if not isinstance(value, str):

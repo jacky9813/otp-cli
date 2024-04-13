@@ -12,6 +12,13 @@ from . import hotp
 class TOTP(hotp.HOTP):
     otp_type:str = "totp"
 
+    _PROHIBITED_KEYS: typing.List[str] = [
+        "period",
+        "digits",
+        "algorithm",
+        "secret"
+    ]
+
 
     def __init__(
         self,

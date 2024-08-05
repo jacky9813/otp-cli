@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 
-import argparse
-import sys
 import os
 import hashlib
 from datetime import datetime
 import logging
 import typing
 import re
+import importlib.metadata
 
 import click
 import qrcode
@@ -69,8 +68,22 @@ def get_image_factory(output: str):
     raise ValueError("Unknown output file extension")
 
 
+def print_version(
+    ctx: click.Context,
+    param: click.Parameter,
+    value: typing.Optional[str] = None
+):
+    if not value or ctx.resilient_parsing:
+        return
+    print(importlib.metadata.version("otp_cli"))
+    ctx.exit()
+
 
 @click.group()
+@click.option(
+    "--version", is_flag=True, callback=print_version, expose_value=False,
+    is_eager=True, help="Show the application version and exit."
+)
 def cli():
     """
     A CLI for managing TOTP and HOTP tokens and QR code.

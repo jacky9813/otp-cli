@@ -14,7 +14,16 @@ T = typing.TypeVar("T")
 
 
 class HOTP:
+    """
+        Implementation of RFC 4226 HOTP: An HMAC-Based One-Time Password
+        Algorithm.
+    """
+
     otp_type: str = "hotp"
+    """
+        The type name for the OTP. This value is used in the otpauth URI as
+        hostname.
+    """
 
     _PROHIBITED_KEYS: typing.List[str] = [
         "counter",
@@ -22,6 +31,10 @@ class HOTP:
         "secret",
         "digits"
     ]
+    """
+        The reserved keys for the OTP. These keys have special meaning in the
+        otpauth URI and shouldn't be treated as general information for the OTP.
+    """
 
 
     def __init__(
@@ -31,8 +44,24 @@ class HOTP:
         counter: typing.Optional[int] = None,
         digits: typing.Literal[6, 8] = 6,
         algorithm: str = "sha1",
-        **additional_info
+        **additional_info: str
     ):
+        """
+        Initialize a HOTP instance.
+
+        :param secret: The secret value for the HOTP. When a str is passed, it 
+            is treated as a Base-32 encoded secret and will be decoded.
+        :type secret: bytes | str
+
+        :param counter: An integer for the HOTP counter, defaults to 0.
+        :type counter: int, optional
+
+        :param digits: The number of digits when a OTP is created, defaults to 6
+        :type digits: int, optional
+
+        :param algorithm: The hashing algorithm for HMAC, defaults to sha1.
+        :type algorithm: str, optional
+        """
         if not secret:
             raise ValueError("secret cannot be empty")
         if not isinstance(secret, (bytes, str)):
@@ -44,7 +73,7 @@ class HOTP:
             )
         if isinstance(secret, str):
             padding_length = 8 - (len(secret) % 8) if len(secret) % 8 else 0
-            secret = base64.b32decode(f'{secret}{"=" * padding_length}')
+            secret = base64.b32decode(f'{secret}{"=" * padding_length}'.upper())
         self._shared_secret = secret
         self._counter = int(counter or 0)
         self._digest = algorithm.lower()
